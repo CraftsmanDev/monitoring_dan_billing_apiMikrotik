@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: 
+
+apify run --input "{\"urls\":[\"https://www.tiktok.com/@pasirputih.situbondo/video/7623672850808868114?is_from_webapp=1&sender_device=pc&web_id=7597064344434099732"],\"maxItems\":100}   
+
+apify run --input "{\"urls\":[\"https://www.tiktok.com/@pasirputih.situbondo/video/7623672850808868114?is_from_webapp=1&sender_device=pc&web_id=7597064344434099732"],\"maxItems\":100}"      
