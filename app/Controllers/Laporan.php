@@ -156,7 +156,6 @@ class Laporan extends BaseController
         ];
         return view('component/laporan/laporan-perbaikan', $data);
     }
-
     public function exportPerbaikan()
     {
         $bulan = $this->request->getGet('bulan');
@@ -174,7 +173,6 @@ class Laporan extends BaseController
                 (int)$bulan
             );
         }
-        // filter tahun
         if ($tahun) {
             $builder->where(
                 'YEAR(perbaikan.tanggal)',
@@ -182,20 +180,96 @@ class Laporan extends BaseController
             );
         }
         $data = $builder
-            ->orderBy('perbaikan.tanggal', 'DESC')
+            ->orderBy(
+                'perbaikan.tanggal',
+                'DESC'
+            )
             ->findAll();
+        $periode =
+            ($bulan && $tahun)
+            ? $bulan . '-' . $tahun
+            : ($tahun
+                ? $tahun
+                : 'Semua Periode');
         $spreadsheet = new Spreadsheet();
-        $sheet =
-            $spreadsheet->getActiveSheet();
-        $sheet->setCellValue('A1', 'No');
-        $sheet->setCellValue('B1', 'ID Pelanggan');
-        $sheet->setCellValue('C1', 'Nama');
-        $sheet->setCellValue('D1', 'Kategori');
-        $sheet->setCellValue('E1', 'Anggaran');
-        $sheet->setCellValue('F1', 'Tanggal');
-        $sheet->setCellValue('G1', 'Status');
-        $sheet->setCellValue('H1', 'Keterangan');
-        $row = 2;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->mergeCells('A1:H1');
+        $sheet->mergeCells('A2:H2');
+        $sheet->setCellValue(
+            'A1',
+            'LAPORAN PERBAIKAN AB NETWORK'
+        );
+
+        $sheet->setCellValue(
+            'A2',
+            'Periode : ' . $periode
+        );
+
+        $sheet->getStyle('A1:H2')
+            ->getAlignment()
+            ->setHorizontal(
+                \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER
+            );
+
+        $sheet->getStyle('A1:H2')
+            ->getAlignment()
+            ->setVertical(
+                \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER
+            );
+
+        $sheet->getStyle('A1:H2')
+            ->getFont()
+            ->setBold(true);
+
+        $sheet->getStyle('A1')
+            ->getFont()
+            ->setSize(16);
+
+        $sheet->getStyle('A2')
+            ->getFont()
+            ->setSize(12);
+
+        $sheet->getRowDimension(1)
+            ->setRowHeight(30);
+
+        $sheet->getRowDimension(2)
+            ->setRowHeight(22);
+        $headerRow = 5;
+
+        $sheet->setCellValue('A'.$headerRow, 'No');
+        $sheet->setCellValue('B'.$headerRow, 'ID Pelanggan');
+        $sheet->setCellValue('C'.$headerRow, 'Nama');
+        $sheet->setCellValue('D'.$headerRow, 'Kategori');
+        $sheet->setCellValue('E'.$headerRow, 'Anggaran');
+        $sheet->setCellValue('F'.$headerRow, 'Tanggal');
+        $sheet->setCellValue('G'.$headerRow, 'Status');
+        $sheet->setCellValue('H'.$headerRow, 'Keterangan');
+        $sheet->getStyle('A5:H5')
+            ->applyFromArray([
+                'font' => [
+                    'bold' => true,
+                    'color' => [
+                        'rgb' => 'FFFFFF'
+                    ]
+                ],
+                'fill' => [
+                    'fillType' =>
+                        \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => [
+                        'rgb' => '1F4E78'
+                    ]
+                ],
+                'alignment' => [
+                    'horizontal' =>
+                        \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                    'vertical' =>
+                        \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+                ]
+            ]);
+
+        $sheet->getRowDimension(5)
+            ->setRowHeight(25);
+        $row = 6;
         foreach ($data as $i => $d) {
             $sheet->setCellValue(
                 'A'.$row,
@@ -234,9 +308,41 @@ class Laporan extends BaseController
             );
             $row++;
         }
+        $sheet->getStyle('E6:E'.($row - 1))
+            ->getNumberFormat()
+            ->setFormatCode('#,##0');
+        $sheet->getStyle('A5:H'.($row - 1))
+            ->applyFromArray([
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' =>
+                            \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                        'color' => [
+                            'rgb' => '000000'
+                        ]
+                    ]
+                ]
+            ]);
+        $sheet->getStyle('A5:H'.($row - 1))
+            ->getAlignment()
+            ->setVertical(
+                \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER
+            );
+
+        $sheet->getStyle('A5:B'.($row - 1))
+            ->getAlignment()
+            ->setHorizontal(
+                \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER
+            );
+
+        $sheet->getStyle('F5:G'.($row - 1))
+            ->getAlignment()
+            ->setHorizontal(
+                \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER
+            );
         foreach (range('A', 'H') as $column) {
-            $sheet
-                ->getColumnDimension($column)
+
+            $sheet->getColumnDimension($column)
                 ->setAutoSize(true);
         }
         $filename =
@@ -262,6 +368,7 @@ class Laporan extends BaseController
     {
         $bulan = $this->request->getGet('bulan');
         $tahun = $this->request->getGet('tahun');
+
         $builder = $this->pembayaran
             ->select('
                 pembayaran.*,
@@ -276,6 +383,7 @@ class Laporan extends BaseController
                 'paket_layanan',
                 'paket_layanan.id_paket = pelanggan.paket_id'
             );
+
         if ($bulan) {
 
             $builder->where(
@@ -298,41 +406,72 @@ class Laporan extends BaseController
                 'DESC'
             )
             ->findAll();
+
         $periode =
-        ($bulan && $tahun)
+            ($bulan && $tahun)
             ? $bulan . '-' . $tahun
             : ($tahun
                 ? $tahun
                 : 'Semua Periode');
 
         $spreadsheet = new Spreadsheet();
-        $sheet =
-            $spreadsheet->getActiveSheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        /*
+        |--------------------------------------------------------------------------
+        | JUDUL LAPORAN
+        |--------------------------------------------------------------------------
+        */
+        $sheet->mergeCells('A1:J1');
+        $sheet->mergeCells('A2:J2');
+
         $sheet->setCellValue(
             'A1',
             'LAPORAN KEUANGAN AB NETWORK'
         );
-        $sheet->mergeCells('A2:J2');
+
         $sheet->setCellValue(
             'A2',
             'Periode : ' . $periode
         );
-        $sheet->getStyle('A1:A2')
+
+        $sheet->getStyle('A1:J2')
             ->getAlignment()
             ->setHorizontal(
                 \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER
             );
-        $sheet->getStyle('A1:A2')
+
+        $sheet->getStyle('A1:J2')
+            ->getAlignment()
+            ->setVertical(
+                \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER
+            );
+
+        $sheet->getStyle('A1:J2')
             ->getFont()
             ->setBold(true);
+
         $sheet->getStyle('A1')
             ->getFont()
             ->setSize(16);
+
         $sheet->getStyle('A2')
             ->getFont()
             ->setSize(12);
 
+        $sheet->getRowDimension(1)
+            ->setRowHeight(30);
+
+        $sheet->getRowDimension(2)
+            ->setRowHeight(22);
+
+        /*
+        |--------------------------------------------------------------------------
+        | HEADER TABEL
+        |--------------------------------------------------------------------------
+        */
         $headerRow = 5;
+
         $sheet->setCellValue('A'.$headerRow, 'No');
         $sheet->setCellValue('B'.$headerRow, 'Invoice');
         $sheet->setCellValue('C'.$headerRow, 'ID Pelanggan');
@@ -344,20 +483,50 @@ class Laporan extends BaseController
         $sheet->setCellValue('I'.$headerRow, 'Status');
         $sheet->setCellValue('J'.$headerRow, 'Tanggal Bayar');
 
-        $sheet->getStyle('A'.$headerRow.':J'.$headerRow)
-            ->getFont()
-            ->setBold(true);
-        $sheet->getStyle('A'.$headerRow.':J'.$headerRow)
-            ->getAlignment()
-            ->setHorizontal(
-                \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER
-            );
+        /*
+        |--------------------------------------------------------------------------
+        | STYLE HEADER
+        |--------------------------------------------------------------------------
+        */
+        $sheet->getStyle('A5:J5')
+            ->applyFromArray([
+                'font' => [
+                    'bold' => true,
+                    'color' => [
+                        'rgb' => 'FFFFFF'
+                    ]
+                ],
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => [
+                        'rgb' => '1F4E78'
+                    ]
+                ],
+                'alignment' => [
+                    'horizontal' =>
+                        \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                    'vertical' =>
+                        \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+                ]
+            ]);
+
+        $sheet->getRowDimension(5)
+            ->setRowHeight(25);
+
+        /*
+        |--------------------------------------------------------------------------
+        | DATA
+        |--------------------------------------------------------------------------
+        */
         $row = 6;
+
         foreach ($data as $i => $d) {
+
             $sheet->setCellValue(
                 'A'.$row,
                 $i + 1
             );
+
             $sheet->setCellValue(
                 'B'.$row,
                 $d['invoice']
@@ -400,25 +569,49 @@ class Laporan extends BaseController
                     : '-'
             );
 
-    $row++;
+            $row++;
         }
+        $sheet->getStyle('G6:G'.($row - 1))
+            ->getNumberFormat()
+            ->setFormatCode('#,##0');
+        $sheet->getStyle('A5:J'.($row - 1))
+            ->applyFromArray([
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' =>
+                            \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                        'color' => [
+                            'rgb' => '000000'
+                        ]
+                    ]
+                ]
+            ]);
+        $sheet->getStyle('A5:J'.($row - 1))
+            ->getAlignment()
+            ->setVertical(
+                \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER
+            );
+        $sheet->getStyle('A5:C'.($row - 1))
+            ->getAlignment()
+            ->setHorizontal(
+                \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER
+            );
+
+        $sheet->getStyle('F5:J'.($row - 1))
+            ->getAlignment()
+            ->setHorizontal(
+                \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER
+            );
         foreach (range('A', 'J') as $column) {
 
-            $sheet
-                ->getColumnDimension($column)
+            $sheet->getColumnDimension($column)
                 ->setAutoSize(true);
-        }
-        foreach (range(2, $row) as $r) {
-            $sheet->getStyle('G'.$r)
-                ->getNumberFormat()
-                ->setFormatCode(
-                    '#,##0'
-                );
         }
         $filename =
             'laporan-keuangan-' .
             date('YmdHis') .
             '.xlsx';
+
         header(
             'Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         );
@@ -431,7 +624,6 @@ class Laporan extends BaseController
                 $spreadsheet
             );
         $writer->save('php://output');
-
         exit;
     }
 }

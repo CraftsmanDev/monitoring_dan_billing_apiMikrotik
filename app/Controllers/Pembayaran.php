@@ -258,6 +258,7 @@ class Pembayaran extends BaseController
             )
         );
     }
+    
     public function print($id)
     {
        $data = $this->pembayaran
