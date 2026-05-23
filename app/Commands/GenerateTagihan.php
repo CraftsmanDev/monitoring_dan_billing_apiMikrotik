@@ -10,8 +10,7 @@ class GenerateTagihan extends BaseCommand
 {
     protected $group = 'Billing';
     protected $name = 'billing:generate';
-    protected $description =
-        'Generate tagihan internet otomatis';
+    protected $description = 'Generate tagihan internet otomatis';
     public function run(array $params)
     {
         $service = new TagihanService();

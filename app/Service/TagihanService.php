@@ -64,23 +64,23 @@ class TagihanService
                 'status_pembayaran' => 'pending',
                 'keterangan' => null
             ]);
-            $nomor = $p['nomor_wa'];
-             $nama_billing =
-                $petugas_billing['nama'] ?? '-';
-            $nomor_billing =
-                $petugas_billing['nomor_wa'] ?? '-';
+            $nomor = preg_replace('/^0/', '62', $p['nomor_wa']);
+            $nama_billing = $petugas_billing['nama'] ?? '-';
+            $nomor_billing = !empty($petugas_billing['nomor_wa'])
+                ? preg_replace('/^0/', '62', $petugas_billing['nomor_wa'])
+                : '-';
             $message =
                 "INFORMASI TAGIHAN INTERNET AB NETWORK\n\n" .
                 "Halo {$p['nama']},\n\n" .
                 "Tagihan internet Anda untuk periode {$periode} telah tersedia.\n\n" .
                 "Total Tagihan : Rp " .number_format($p['tarif'],0,',','.') . "\n" .
-                "Jatuh Tempo : " . $jatuh_tempo . "\n\n" .
+                "tanggal akhir pembayaran : " . $jatuh_tempo . "\n\n" .
                 "Pembayaran Transfer:\n" .
                 "BANK BRI : 345723635478\n" .
                 "Atas Nama : Arif\n\n" .
                 "Pembayaran Cash:\n" .
-                "{$nama_billing}\n" .
-                "{$nomor_billing}\n\n".
+                "nama : {$nama_billing}\n" .
+                "nomor wa:{$nomor_billing}\n\n".
                 "Mohon melakukan pembayaran sebelum jatuh tempo agar layanan tetap aktif.\n\n" .
                 "Terima kasih.";
             if (!empty($nomor)) {
